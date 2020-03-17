@@ -28,16 +28,16 @@ public:
     int len, al;
 
     // Wskaznik do reprezentacji liczby
-    long long *array_of_digits;
+    int *array_of_digits;
 
     // Konstruktor liczby o wartosci v (int) i zaalokowanej pamieci dla l cyfr
-    BigNum(int v = 0, int l = 2) : len(1), al(l), array_of_digits(new long long[l]) {
+    BigNum(int v = 0, int l = 2) : len(1), al(l), array_of_digits(new int[l]) {
         REP(x, al) array_of_digits[x] = 0;
         if ((array_of_digits[0] = v) >= BASE) carry(1);
     }
 
     // Konstruktor, przypisujacy wartosc innej liczby typu BigNum
-    BigNum(const BigNum &a) : len(a.len), al(len), array_of_digits(new long long[al]) {
+    BigNum(const BigNum &a) : len(a.len), al(len), array_of_digits(new int[al]) {
         REP(x, al) array_of_digits[x] = a.array_of_digits[x];
     }
 
@@ -51,7 +51,7 @@ public:
     // realokacji
     void Res(int l) {
         if (l > al) {
-            long long *n = new long long[l = std::max(l, 2 * al)];
+            int *n = new int[l = std::max(l, 2 * al)];
             REP(x, l) n[x] = x >= al ? 0 : array_of_digits[x];
             delete[] array_of_digits;
             array_of_digits = n;
@@ -61,8 +61,7 @@ public:
     }
 
     // Funkcja dokonuje przenoszenia do starszych cyfr nadmiaru powstałego na skutek
-    // wykonywania operacji. Jest to jedyne miejsce w całej strukturze, gdzie
-    // wykonuje sie ta operacje. Parametr okresla liczbe cyfry, do której nalezy
+    // wykonywania operacji. Parametr okresla liczbe cyfry, do której nalezy
     // wykonac przenoszenie nadmiaru
     void carry(int p) {
         int x = 0;
@@ -176,7 +175,17 @@ public:
     BigNum& operator *= (const BigNum &a) {
         BigNum c(0, len + a.len);
         REP(x, a.len) {
-            REP(y, len) c.array_of_digits[y + x] += array_of_digits[y] * a.array_of_digits[x];
+            REP(y, len) {
+                long long prod = a.array_of_digits[x];
+                prod *= array_of_digits[y];
+
+                c.array_of_digits[y + x] += prod % BASE;
+
+                if (prod >= BASE) {
+                    long long i = prod / BASE;
+                    c.array_of_digits[y + x + 1] += i;
+                }
+            }
             c.carry(len + x);
         }
         *this = c;
@@ -250,6 +259,7 @@ public:
     void write() const {
         printf("%d", int(array_of_digits[len - 1]));
         FORD(x, len - 2, 0) printf("%0*d", BD, int(array_of_digits[x]));
+        printf("\n");
     }
 
     // Funkcja wypisuje do przekazanego bufora wartosc liczby zapisanej przy
