@@ -10,16 +10,16 @@ int max_power(BigNum& number){
     return max_pow - 1;
 }
 
-BigNum quick_power(BigNum x, BigNum n){
+BigNum quick_power_modulo(BigNum x, BigNum n, BigNum& mod){
     if(n == 1){
         return x;
     }
 
     if(n % 2 == 0){
-        return (quick_power(x, n / 2)*quick_power(x, n / 2));
+        return ( (quick_power_modulo(x, n / 2, mod) % mod)*((quick_power_modulo(x, n / 2, mod)) % mod)) % mod;
     }
     else{
-        return (x * quick_power(x, n / 2)*quick_power(x, n / 2));
+        return ((x % mod) * ((quick_power_modulo(x, n / 2, mod) % mod)*(quick_power_modulo(x, n / 2, mod) % mod)) % mod) % mod;
     }
 }
 
@@ -43,39 +43,21 @@ void miler_rabin_test(BigNum& n){
     BigNum s = (n-1) / pow(2, t);
 
     for(int i = 0; i < ktab.size(); ++i){
+        std::cout << "ukonczono " << (int) ( i * 100 / ktab.size()) << " procent\n";
         BigNum a = ktab[i];
-
-        if( ((a ^ (n-1)) % n) != 1){
+        if( quick_power_modulo(a, (n-1), n) != 1)
+        {
             std::cout << "ZLOZONA\n";
             return;
         }
-        std::cout << "a\n";
-        BigNum a_curr( (a ^ s)  );
-        a_curr.write();
-        a_curr %= n;
-        a_curr.write();
-
-        std::cout << "b\n";
-        BigNum test( (quick_power(a, s)) );
-        test.write();
-        test %= n;
-        test.write();
-
+        BigNum a_curr = quick_power_modulo(a, n-1, n);
 
         if(a_curr == 1) continue;
-        BigNum a_next( (a_curr^BigNum(2)) % n);
+        BigNum a_next = quick_power_modulo (a, BigNum(2), n);
         while (a_next != 1){
             a_curr = a_next;
             a_next *= a_next;
             a_next %= n;
-            /*
-            std::cout << "n: ";
-            n.write();
-            std::cout << "a_curr: ";
-            a_curr.write();
-            std::cout << "a_next: ";
-            a_next.write();
-             */
         }
         if(a_curr != (n - 1)){
             std::cout << "ZLOZONA\n";
@@ -89,8 +71,9 @@ void miler_rabin_test(BigNum& n){
 int main() {
 
 
-    BigNum n(523  );
-    //miler_rabin_test(n);
+    BigNum n(104729);
+    miler_rabin_test(n);
+    /*
     BigNum mod(7283);
     std::string str;
     std::cin >> str;
@@ -106,7 +89,7 @@ int main() {
     ((quick_power(mod, n)) % n ).write();
 
     if()
-
+*/
 
     return 0;
 }
