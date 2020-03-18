@@ -226,14 +226,14 @@ public:
     BigNum& operator %= (const BigNum &a) {
 
         BigNum v = *this;
-        v.write();
-        a.write();
+        //v.write();
+        //a.write();
         v /= a;
-        v.write();
+        //v.write();
 
         v *= a;
 
-        std::cout << "\n";
+        //std::cout << "\n";
 
         *this -= v;
 
