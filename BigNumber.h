@@ -27,10 +27,10 @@ public:
     // wielkosc zaalokowanej pamieci do przechowywania cyfr liczby
     int len, al;
 
-    // Wskaznik do reprezentacji liczby
+    // Wskaznik do reprezentacji liczby w tablicy
     int *array_of_digits;
 
-    // Konstruktor liczby o wartosci v (int) i zaalokowanej pamieci dla l cyfr
+    // Konstruktor liczby o wartosci v i zaalokowanej pamieci dla l cyfr
     BigNum(int v = 0, int l = 2) : len(1), al(l), array_of_digits(new int[l]) {
         REP(x, al) array_of_digits[x] = 0;
         if ((array_of_digits[0] = v) >= BASE) carry(1);
@@ -67,15 +67,15 @@ public:
         int x = 0;
         for (; x < p || array_of_digits[x] < 0 || array_of_digits[x] >= BASE; x++) {
             Res(x + 2);
-            // W razie potrzeby wykonaj zapozyczenie od starszej cyfry...
+            // W razie potrzeby wykonaj zapozyczenie ze starszej pozycji
             if (array_of_digits[x] < 0) {
-                long long i = (-array_of_digits[x] - 1) / BASE + 1;
+                int i = (-array_of_digits[x] - 1) / BASE + 1;
                 array_of_digits[x] += i * BASE;
                 array_of_digits[x + 1] -= i;
             } else
             // lub wykonaj przeniesienie powstałego nadmiaru
             if (array_of_digits[x] >= BASE) {
-                long long i = array_of_digits[x] / BASE;
+                int i = array_of_digits[x] / BASE;
                 array_of_digits[x] -= i * BASE;
                 array_of_digits[x + 1] += i;
             }
@@ -84,12 +84,12 @@ public:
         REDUCE();
     }
 
-    //#define OPER1(op) bool operator op (const BigNum &a) const
-    // Operatory porównawcze
+
+    // Operatory porównawcze na wielkich liczbach
     bool operator == (const BigNum &a) const {
-        if (a.len != len) return 0;
-        REP(x, len) if (array_of_digits[x] != a.array_of_digits[x]) return 0;
-        return 1;
+        if (a.len != len) return false;
+        REP(x, len) if (array_of_digits[x] != a.array_of_digits[x]) return false;
+        return true;
     }
 
     bool operator < (const BigNum &a) const {
@@ -98,24 +98,24 @@ public:
         while (x && a.array_of_digits[x] == array_of_digits[x]) x--;
         return array_of_digits[x] < a.array_of_digits[x];
     }
-// Operator ten wymaga implementacji operatora <(BigNum)
+
     bool operator > (const BigNum &a) const {
         return a < *this;
     }
-// Operator ten wymaga implementacji operatora <(BigNum)
+
     bool operator <= (const BigNum &a) const {
         return !(a < *this);
     }
-// Operator ten wymaga implementacji operatora <(BigNum)
+
     bool operator >= (const BigNum &a) const {
         return !(*this < a);
     }
-// Operator ten wymaga implementacji operatora ==(BigNum)
+
     bool operator != (const BigNum &a) const {
         return !(*this == a);
     }
 
-    // Operacje dla liczb typu int
+    // Operacje dla liczb typu int na wielkich liczbach
     BigNum &operator=(int a) {
         REP(x, len) array_of_digits[x] = 0;
         len = 1;
@@ -134,7 +134,12 @@ public:
     }
 
     void operator*=(int a) {
-        REP(x, len) array_of_digits[x] *= a;
+        REP(x, len) {
+            long long tmp = array_of_digits[x];
+            tmp *= a;
+            array_of_digits[x] = tmp % BASE;
+            array_of_digits[x + 1] += tmp / BASE;
+        }
         carry(len);
     }
 
@@ -145,8 +150,6 @@ public:
         }
     }
 
-// Ponizszy operator zwraca jako wynik reszte z dzielenia liczby typu BigNum
-// przez liczbe typu int
     int operator/=(int a) {
         long long w = 0;
         FORD(p, len - 1, 0) {
@@ -163,9 +166,8 @@ public:
         FORD(p, len - 1, 0) w = (w * BASE + array_of_digits[p]) % a;
         return w;
     }
-    // Operacje wyłacznie na liczbach typu BigNum
-#define OPER2(op) BigNum& operator op (const BigNum &a)
 
+    // Operacje arytmetyncze na wielkich liczbach
     BigNum& operator += (const BigNum &a) {
         Res(a.len);
         REP(x, a.len) array_of_digits[x] += a.array_of_digits[x];
@@ -192,17 +194,14 @@ public:
                     long long i = prod / BASE;
                     c.array_of_digits[y + x + 1] += i;
                 }
+                c.carry(len + x);
             }
-            c.carry(len + x);
         }
         *this = c;
         return *this;
     }
 
 
-// Operator ten wymaga implementacji nastepujacych operatorów: <(BigNum),
-// +=(BigNum), *=(BigNum), +(BigNum), *(BigNum), <<(int),
-// <<=(int)
     BigNum& operator /= (const BigNum &a) {
         int n = std::max(len - a.len + 1, 1);
         BigNum quotient(0, n), prod(0);
@@ -210,7 +209,7 @@ public:
             int l = 0, r = BASE - 1;
             while (l < r) {
                 int m = (l + r + 1) / 2;
-                if (*this < prod + (a * m << i)) r = m - 1;
+                if (*this < prod + ((a * m) << i)) r = m - 1;
                 else l = m;
             }
             prod += a * l << i;
@@ -220,9 +219,7 @@ public:
         *this = quotient;
         return *this;
     }
-// Operator ten wymaga implementacji nastepujacych operatorów: <(BigNum),
-// +=(BigNum), *=(BigNum), +(BigNum), *(BigNum), <<(BigNum),
-// <<=(BigNum)
+
     BigNum& operator %= (const BigNum &a) {
 
         BigNum v = *this;
@@ -230,27 +227,14 @@ public:
         //a.write();
         v /= a;
         //v.write();
-
         v *= a;
-
-        //std::cout << "\n";
-
         *this -= v;
-
         while( *this >= a ) *this -= a;
 
         return *this;
     }
-    BigNum& operator ^= (const BigNum &a) {
-        BigNum c(*this);
-        BigNum counter(a - 1);
-        while(counter > 0){
-            *this *= c;
-            counter -= 1;
-        }
-        return *this;
-    }
 
+    //operator przypisania kopiujacy
     BigNum& operator = (const BigNum &a) {
         Res(a.len);
         FORD(x, len - 1, a.len) array_of_digits[x] = 0;
@@ -259,21 +243,10 @@ public:
         return *this;
     }
 
-    // Funkcje słuzace do wczytywania i wypisywania liczb
-    // Funkcja przypisuje liczbie BigNum wartosc liczby z przekazanego wektora,
-    // zapisanej przy podstawie p
-    // Operator ten wymaga implementacji +=(int), *=(int)
-    void read(const std::vector<int> &v, int p) {
-        *this = 0;
-        FORD(x, v.size(), 0) {
-            *this *= p;
-            *this += v[x];
-        }
-    }
+// Funkcje słuzace do wczytywania i wypisywania liczb
 
     // Funkcja przypisuje liczbie BigNum wartosc liczby z napisu zapisanego przy
     // podstawie 10
-    // Operator ten wymaga implementacji =(int)
     BigNum& operator=(std::string a) {
         int s = a.length();
         *this = 0;
@@ -290,22 +263,6 @@ public:
         printf("\n");
     }
 
-    // Funkcja wypisuje do przekazanego bufora wartosc liczby zapisanej przy
-    // podstawie 10
-    void write(char *buf) const {
-        int p = sprintf(buf, "%d", int(array_of_digits[len - 1]));
-        FORD(x, len - 2, 0) p += sprintf(buf + p, "%0*d", BD, int(array_of_digits[x]));
-    }
-
-    // Funkcja zwraca wektor cyfr liczby zapisanej przy podstawie pod. Funkcja ta
-    // wymaga implementacji /=(int), =(BigNum)
-    std::vector<int> write(int pod) const {
-        std::vector<int> w;
-        BigNum v(0);
-        v = *this;
-        while (v.len > 1 || v.array_of_digits[0]) w.push_back(v /= pod);
-        return w;
-    }
 
     // Operator przesuniecia w prawo o n cyfr
     BigNum &operator>>=(int n) {
@@ -329,25 +286,13 @@ public:
 
 
 
-    // Operator wymaga implementacji +=(BigNum)
     BigNum operator +(const BigNum &a) const {BigNum w = *this; w += a; return w;}
-    // Operator wymaga implementacji -=(BigNum)
     BigNum operator -(const BigNum &a) const {BigNum w=*this; w -= a; return w; }
-    // Operator wymaga implementacji *=(BigNum)
     BigNum operator *(const BigNum &a) const {BigNum w=*this; w *= a; return w; }
-    // Operator wymaga implementacji <(BigNum), +=(BigNum), *=(BigNum),
-    // /=(BigNum), +(BigNum), *(BigNum), <<(int)
     BigNum operator /(const BigNum &a) const {BigNum w=*this; w /= a; return w; }
-    // Operator wymaga implementacji <(BigNum), +=(BigNum), -=(BigNum),
-    // *=(BigNum), /=(BigNum), %=(BigNum), +(BigNum), *(BigNum)
     BigNum operator %(const BigNum &a) const {BigNum w=*this; w %= a; return w; }
-    // Operator wymaga implementacji *=(BigNum)
-    BigNum operator ^(const BigNum &a) const {BigNum w=*this; w ^= a; return w; }
-    // Operator wymaga implementacji *=(BigNum)
     BigNum operator ^(int a) {BigNum w = *this; w ^= a; return w;}
-    // Operator wymaga implementacji <<=(int)
     BigNum operator <<(int a) {BigNum w = *this; w <<= a; return w; }
-    // Operator wymaga implementacji >>=(int)
     BigNum operator >>(int a) {BigNum w = *this; w >>= a; return w; }
 
 };

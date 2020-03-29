@@ -1,95 +1,92 @@
 #include <iostream>
 #include <cmath>
+#include <chrono>
 #include "BigNumber.h"
 
-int max_power(BigNum& number){
-    int max_pow = 1;
+// Funkcja przeprowadza test Millera-Rabina sprawdzajacy pierwszosc liczby 'n' testujac dla zadanego 'a'
+bool miler_rabin_test(BigNum a, BigNum n) {
 
-    while( (number - 1) % pow(2, max_pow) == 0   ) { max_pow++; }
+    // jesli liczba 'a' jest wieksza niz n-1 to nie zachodzi twierdzenie
+    if (a >= n) return false;
 
-    return max_pow - 1;
-}
+    // przedstawiamy liczbe (n-1) jako d*(2**r)
+    BigNum a_curr(1), y, l(n - 1);
+    int r = 0;
+    bool stop = 0;
 
-BigNum quick_power_modulo(BigNum x, BigNum n, BigNum& mod){
-    if(n == 1){
-        return x;
+    //ustal r
+    while ((l % 2) == 0) {
+        ++r;
+        l /= 2;
     }
 
-    if(n % 2 == 0){
-        return ( (quick_power_modulo(x, n / 2, mod) % mod)*((quick_power_modulo(x, n / 2, mod)) % mod)) % mod;
-    }
-    else{
-        return ((x % mod) * ((quick_power_modulo(x, n / 2, mod) % mod)*(quick_power_modulo(x, n / 2, mod) % mod)) % mod) % mod;
-    }
-}
-
-
-void miler_rabin_test(BigNum& n){
-
-    std::cout << "TESTING NUMBER ";
-    n.write();
-    std::vector<BigNum> ktab = { BigNum(2), BigNum(325), BigNum(9375), BigNum(28178), BigNum(450775), BigNum(9780504), BigNum(1795265022)};
-    if(n == 2){
-        std::cout << "PIERWSZA\n";
-        return;
-    }
-    else if (n % 2 == 0){
-        std::cout << "ZLOZONA\n";
-        return;
-    }
-
-
-    int t = max_power(n);
-    BigNum s = (n-1) / pow(2, t);
-
-    for(int i = 0; i < ktab.size(); ++i){
-        std::cout << "ukonczono " << (int) ( i * 100 / ktab.size()) << " procent\n";
-        BigNum a = ktab[i];
-        if( quick_power_modulo(a, (n-1), n) != 1)
-        {
-            std::cout << "ZLOZONA\n";
-            return;
+    // dla kazdego r rozwazamy liczbe a_curr = a**(d*(2**r))
+    for (; l > 0 || r--; l /= 2) {
+        // sprawdzenie parzystosci ostatniego bitu do wzoru z szybkim potegowaniem
+        if ((l % 2) == 1) {
+            a_curr = (a_curr * a) % n;
         }
-        BigNum a_curr = quick_power_modulo(a, n-1, n);
-
-        if(a_curr == 1) continue;
-        BigNum a_next = quick_power_modulo (a, BigNum(2), n);
-        while (a_next != 1){
-            a_curr = a_next;
-            a_next *= a_next;
-            a_next %= n;
+        else if (!stop && l == 0) {
+            stop = 1;
+            a = a_curr;
         }
-        if(a_curr != (n - 1)){
-            std::cout << "ZLOZONA\n";
-            return;
+        // podniesienie do kwadratu -> szybkie potegowanie
+        y = (a * a) % n;
+        if (y == 1 && a != 1 && a != n - 1) return true;
+        a = y;
+    }
+
+    return a != 1;
+  }
+// Funkcja sprawdza, czy dana liczba typu BigNum jest pierwsza. W tym celu
+// wykonuje kilka razy test Millera-Rabina
+bool is_prime(const BigNum &x) {
+    // tablica liczb dla ktorych bedziemy testowac pierwszosci, wedle zrodel te liczby sa 'wartosciowe' dla testow
+    std::vector<BigNum> ktab
+        = { BigNum(2), BigNum(325), BigNum(9375), BigNum(28178), BigNum(450775), BigNum(9780504), BigNum(1795265022)};
+
+    if (x < 2) return false;
+
+    // dla kolejnych liczb z tablicy wykonuj test M-R
+    for(const auto& i : ktab) {
+        // jesli choc raz zanleziono swiadka zlozonosci mozna zwrocic falsz
+        if (miler_rabin_test(i, x)) {
+            return false;
         }
     }
-    std::cout << "PIERWSZA\n";
+    return true;
 }
+
 
 
 int main() {
 
 
-    BigNum n(104729);
-    miler_rabin_test(n);
-    /*
-    BigNum mod(7283);
-    std::string str;
-    std::cin >> str;
-    BigNum dwa(123);
-    dwa = str;
-    std::cin >> str;
-    mod = str;
+    int zero;
+    scanf("%d", &zero);
+    BigNum ten(1);
+    for(int i = 0; i < zero; ++i){
+        ten *= 10;
+    }
+    ten += 9;
+    ten.write();
+
+    //std::string str;
+    //std::cout << "Podaj liczbe:\n";
+    //std::cin >> str;
 
 
-    dwa ^= n;
-    dwa %= n;
 
-    ((quick_power(mod, n)) % n ).write();
+    BigNum n(0);
+    n = ten;
 
-    if()
-*/
+    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+
+    if(is_prime(n)) std::cout << "PIERWSZA" << std::endl;
+    else std::cout << "ZLOZONA\n";
+
+    std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+    std::cout << "Czas: " << (std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count()) / 1000 << std::endl;
 
     return 0;
 }
