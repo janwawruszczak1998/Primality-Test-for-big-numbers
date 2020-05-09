@@ -4,9 +4,24 @@
 #include "BigNumber.h"
 #include "JacobiSymbol.h"
 
+template <typename T>
+constexpr T PowerModule( T b, T e, T m ) noexcept {
+    const T id = 1;
+    if ( e == 0 ) return id;
+    b = b % m;
+    if ( e == 1 || b == 0 ) return b;
+    T result = id;
+    while ( e > 0 ) {
+        if ( e % 2 != 0 ) {
+            result = (result * b) % m;
+        }
+        e /= 2;
+        b = ( b * b ) % m;
+    }
+    return result;
+}
 
-
-bool solovay_strassen_test(const BigNum& a, const BigNum& n){
+bool solovay_strassen_test(const BigNum& a, const BigNum& n) noexcept {
     // jesli liczba 'a' jest wieksza niz n-1 to nie zachodzi twierdzenie
     if (a >= n) return false;
 
@@ -14,15 +29,13 @@ bool solovay_strassen_test(const BigNum& a, const BigNum& n){
     if ( n == 2 ) return true;
     if (n % 2 == 0) return false;
 
-    BigNum m = n - 1;
-
-    BigNum diff = PowerModule<BigNum>(a, (n-1)/2, n ) - jacobi_symbol(a, n);
+    const BigNum diff = PowerModule<BigNum>(a, (n-1)/2, n ) - jacobi_symbol(a, n);
     return (diff != 0) && (diff != n);
 
 }
 
 // Funkcja przeprowadza test Millera-Rabina sprawdzajacy pierwszosc liczby 'n' testujac dla zadanego 'a'
-bool miler_rabin_test(BigNum a, BigNum n) {
+bool miler_rabin_test(BigNum a, const BigNum& n) noexcept {
 
     // jesli liczba 'a' jest wieksza niz n-1 to nie zachodzi twierdzenie
     if (a >= n) return false;
@@ -63,7 +76,7 @@ bool miler_rabin_test(BigNum a, BigNum n) {
 
 // Funkcja sprawdza, czy dana liczba typu BigNum jest pierwsza. W tym celu
 // wykonuje kilka razy test Millera-Rabina
-bool is_prime_mr(const BigNum &x) {
+bool is_prime_mr(const BigNum &x) noexcept {
     // tablica liczb dla ktorych bedziemy testowac pierwszosci, wedle zrodel te liczby sa 'wartosciowe' dla testow
     std::vector<BigNum> ktab
         = { BigNum(2), BigNum(325), BigNum(9375), BigNum(28178), BigNum(450775), BigNum(9780504), BigNum(1795265022)};
@@ -80,7 +93,7 @@ bool is_prime_mr(const BigNum &x) {
     return true;
 }
 
-bool is_prime_ss(const BigNum &x) {
+bool is_prime_ss(const BigNum &x) noexcept {
     // tablica liczb dla ktorych bedziemy testowac pierwszosci, wedle zrodel te liczby sa 'wartosciowe' dla testow
     std::vector<BigNum> ktab
             = { BigNum(2), BigNum(325), BigNum(9375), BigNum(28178), BigNum(450775), BigNum(9780504), BigNum(1795265022)};

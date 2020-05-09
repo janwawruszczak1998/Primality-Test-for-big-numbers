@@ -5,22 +5,7 @@
 #ifndef PRIMES_JACOBISYMBOL_H
 #define PRIMES_JACOBISYMBOL_H
 
-template <typename T>
-constexpr T PowerModule( T b, T e, T m ) noexcept {
-    const T id = 1;
-    if ( e == 0 ) return id;
-    b = b % m;
-    if ( e == 1 || b == 0 ) return b;
-    T result = id;
-    while ( e > 0 ) {
-        if ( e % 2 != 0 ) {
-            result = (result * b) % m;
-        }
-        e = e / 2;
-        b = ( b * b ) % m;
-    }
-    return result;
-}
+
 
 template <typename T>
 constexpr inline int Ep( const T& n ) noexcept {
