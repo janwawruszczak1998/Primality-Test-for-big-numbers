@@ -25,19 +25,21 @@ public:
 
     // Zmienna len reprezentuje aktualna długosc liczby (liczbe cyfr), a al
     // wielkosc zaalokowanej pamieci do przechowywania cyfr liczby
+    // is_negative jest potrzebne do oblicznia symbolu Jakobiego i mówi o znaku liczby
     int len, al;
+    bool is_negative;
 
     // Wskaznik do reprezentacji liczby w tablicy
     int *array_of_digits;
 
     // Konstruktor liczby o wartosci v i zaalokowanej pamieci dla l cyfr
-    BigNum(int v = 0, int l = 2) : len(1), al(l), array_of_digits(new int[l]) {
+    BigNum(int v = 0, int l = 2) : len(1), al(l), array_of_digits(new int[l]), is_negative(false){
         REP(x, al) array_of_digits[x] = 0;
         if ((array_of_digits[0] = v) >= BASE) carry(1);
     }
 
     // Konstruktor, przypisujacy wartosc innej liczby typu BigNum
-    BigNum(const BigNum &a) : len(a.len), al(len), array_of_digits(new int[al]) {
+    BigNum(const BigNum &a) : len(a.len), al(len), array_of_digits(new int[al]), is_negative(false) {
         REP(x, al) array_of_digits[x] = a.array_of_digits[x];
     }
 
